@@ -109,6 +109,15 @@ public class Go {
 		writeInserts(testSuite, dbmsObject, file, schemaObject);
 
 	    }
+	    /*
+	    for (TestCase tc : testSuite.getTestCases()) {
+		System.out.println("STATE");
+		System.out.println(tc.getState());
+		System.out.println("DATA");
+		System.out.println(tc.getData());
+		System.out.println("=====================================================================");
+	    }
+	    */
 
 	    // print some stats
 	    TestSuiteGenerationReport report = testSuiteGenerator.getTestSuiteGenerationReport();
@@ -118,6 +127,15 @@ public class Go {
 	    System.out.println("Num Evaluations (test cases only): " + report.getNumDataEvaluations(true));
 	    System.out.println("Num Evaluations (all): " + report.getNumEvaluations(false));
 
+	    System.out.println("=================================Before Reduce===============================");
+	    System.out.println("Number of Test Cases: " + testSuite.getTestCases().size());	    
+	    System.out.println("=================================After Reduce================================");
+	    TestSuiteReduction reduce = new TestSuiteReduction(testSuite);
+	    reduce.reducedTestSuite();
+	    System.out.println("Number of Test Cases: " + testSuite.getTestCases().size());
+	    System.out.println("=============================================================================");
+
+	    
 	    if (printTR) {
 		printTRs(testRequirements);
 	    }
