@@ -20,6 +20,10 @@ public class TestSuite implements Serializable {
     public void addTestCase(TestCase testCase) {
         testCases.add(testCase);
     }
+    
+    public void removeTestCase(int index) {
+	testCases.remove(index);
+    }
 
     public List<TestCase> getTestCases() {
         return new ArrayList<>(testCases);
