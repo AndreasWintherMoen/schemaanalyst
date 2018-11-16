@@ -182,4 +182,17 @@ public class DataGeneratorFactory {
                 randomCellInitializer,
                 avs);
     }
+    
+    public static DominoDataGenerator dominoDefaultsGenerator(long randomSeed, int maxEvaluations, Schema schema) {
+        Random random = makeRandomNumberGenerator(randomSeed);
+
+        RandomCellValueGenerator randomCellValueGenerator = makeRandomCellValueGenerator(random, schema);
+        //RandomCellInitializer randomCellInitializer = new RandomCellInitializer(randomCellValueGenerator);
+
+        return new DominoDataGenerator(
+                random,
+                maxEvaluations,
+                randomCellValueGenerator,
+                new DefaultCellInitializer());
+    }
 }
