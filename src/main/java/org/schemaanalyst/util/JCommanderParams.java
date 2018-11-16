@@ -21,6 +21,12 @@ public class JCommanderParams {
   @Parameter(names = {"--dbms","-d","--database"}, description = "Database Management System")
   protected String dbms = "SQLite";
 
+  @Parameter(names = {"--seed","-rs","--randomseed"}, description = "A long random seed")
+  protected long randomseed = -0L;
+  
+  @Parameter(names = {"--printTR","-ptr","--printTestRequriments"}, description = "Print Test Requriments")
+  protected boolean printTR = false;
+  
   /* @Parameter(names = {"--help","-h"}, description = "Print the help menu") */
   /* protected boolean help = false; */
 
