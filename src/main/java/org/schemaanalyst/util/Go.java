@@ -91,10 +91,16 @@ public class Go {
 		    .instantiateSchemaCriterion(criterion, schemaObject, dbmsObject).generateRequirements();
 	    DataGenerator dataGeneratorObject = DataGeneratorFactory.instantiate(datagenerator, randomseed, 100000,
 		    schemaObject);
-
+	    	    
+	    System.out.println("===========================Before Reducing Test Require===========================");
+	    System.out.println("Number of Test Requirements: " + testRequirements.getTestRequirements().size());	    
+	    
 	    // filter and reduce test requirements
 	    testRequirements.filterInfeasible();
 	    testRequirements.reduce();
+	    
+	    System.out.println("===========================After Reducing Test Require============================");
+	    System.out.println("Number of Test Requirements: " + testRequirements.getTestRequirements().size());	    
 
 	    // generate the test suite
 	    TestSuiteGenerator testSuiteGenerator = new TestSuiteGenerator(schemaObject, testRequirements,
@@ -109,15 +115,6 @@ public class Go {
 		writeInserts(testSuite, dbmsObject, file, schemaObject);
 
 	    }
-	    /*
-	    for (TestCase tc : testSuite.getTestCases()) {
-		System.out.println("STATE");
-		System.out.println(tc.getState());
-		System.out.println("DATA");
-		System.out.println(tc.getData());
-		System.out.println("=====================================================================");
-	    }
-	    */
 
 	    // print some stats
 	    TestSuiteGenerationReport report = testSuiteGenerator.getTestSuiteGenerationReport();
@@ -127,13 +124,18 @@ public class Go {
 	    System.out.println("Num Evaluations (test cases only): " + report.getNumDataEvaluations(true));
 	    System.out.println("Num Evaluations (all): " + report.getNumEvaluations(false));
 
-	    System.out.println("=================================Before Reduce===============================");
+	    
+	    System.out.println("=================================Before Post-Reduce===============================");
 	    System.out.println("Number of Test Cases: " + testSuite.getTestCases().size());	    
-	    System.out.println("=================================After Reduce================================");
-	    TestSuiteReduction reduce = new TestSuiteReduction(testSuite);
-	    reduce.reducedTestSuite();
+	    System.out.println("=================================After Post-Reduce================================");
+	    TestSuiteReduction reduce = new TestSuiteReduction(testSuite, testRequirements);
+	    //reduce.reducedTestSuiteByEqualTCs();
+	    reduce.reducedTestSuiteByEqualPredicateData();
+	    testSuite = reduce.getReducedTestSuite();
+	    //TestSuiteReductionByPredicate reducePredicate = new TestSuiteReductionByPredicate(testSuite, testRequirements);
+	    //testSuite = reducePredicate.reduce();
 	    System.out.println("Number of Test Cases: " + testSuite.getTestCases().size());
-	    System.out.println("=============================================================================");
+	    System.out.println("==================================================================================");
 
 	    
 	    if (printTR) {
@@ -202,6 +204,7 @@ public class Go {
 	    if (classname.equals("")) {
 		classname = "Test" + schemaObject.getName();
 	    }
+	    classname = classname.replace(".", "");
 
 	    String javaCode = new TestSuiteJavaWriter(schemaObject, dbmsObject, testSuite, true)
 		    .writeTestSuite(packagename, classname);
