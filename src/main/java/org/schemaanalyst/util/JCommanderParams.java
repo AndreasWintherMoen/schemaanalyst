@@ -24,6 +24,9 @@ public class JCommanderParams {
   @Parameter(names = {"--seed","-rs","--randomseed"}, description = "A long random seed")
   protected long randomseed = -0L;
   
+  @Parameter(names = {"--reduce"}, description = "Post generation test suite reduction. Options: none (default), eqltc (Equal Test Cases), eqltr (Equal Test Requirements)")
+  protected String reduce = "none";
+  
   @Parameter(names = {"--printTR","-ptr","--printTestRequriments"}, description = "Print Test Requriments")
   protected boolean printTR = false;
   
