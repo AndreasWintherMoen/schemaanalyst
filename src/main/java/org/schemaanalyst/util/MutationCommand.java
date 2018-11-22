@@ -24,5 +24,8 @@ public class MutationCommand {
 
   @Parameter(names = "--transactions", description = "Whether to use transactions with this technique (if possible).")
   public boolean transactions = false;
+  
+  @Parameter(names = {"--reduce"}, description = "Post generation test suite reduction. Options: none (default), eqltc (Equal Test Cases), eqltr (Equal Test Requirements)")
+  protected String reduce = "none";
 
 }
