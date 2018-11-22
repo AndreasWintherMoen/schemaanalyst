@@ -46,6 +46,8 @@ public class Go {
 	String datagenerator = jcp.generator;
 
 	String dbms = jcp.dbms;
+	
+	String reduction = jcp.reduce;
 
 	long randomseed = jcp.randomseed;
 
@@ -65,7 +67,7 @@ public class Go {
 	    String[] pargs = new String[] { schema, "--criterion=" + criterion, "--dataGenerator=" + datagenerator,
 		    "--maxevaluations=" + mc.maxEvaluations, "--randomseed=" + mc.seed,
 		    "--mutationPipeline=" + mc.pipeline, "--technique=" + mc.technique,
-		    "--useTransactions=" + mc.transactions };
+		    "--useTransactions=" + mc.transactions, "--reduce=" + mc.reduce };
 
 	    MutationAnalysis.main(pargs);
 
@@ -91,16 +93,16 @@ public class Go {
 		    .instantiateSchemaCriterion(criterion, schemaObject, dbmsObject).generateRequirements();
 	    DataGenerator dataGeneratorObject = DataGeneratorFactory.instantiate(datagenerator, randomseed, 100000,
 		    schemaObject);
-	    	    
-	    System.out.println("===========================Before Reducing Test Require===========================");
-	    System.out.println("Number of Test Requirements: " + testRequirements.getTestRequirements().size());	    
+	   
+	    //System.out.println("===========================Before Reducing Test Require===========================");
+	    //System.out.println("Number of Test Requirements: " + testRequirements.getTestRequirements().size());	    
 	    
 	    // filter and reduce test requirements
 	    testRequirements.filterInfeasible();
 	    testRequirements.reduce();
 	    
-	    System.out.println("===========================After Reducing Test Require============================");
-	    System.out.println("Number of Test Requirements: " + testRequirements.getTestRequirements().size());	    
+	    //System.out.println("===========================After Reducing Test Require============================");
+	    //System.out.println("Number of Test Requirements: " + testRequirements.getTestRequirements().size());	    
 
 	    // generate the test suite
 	    TestSuiteGenerator testSuiteGenerator = new TestSuiteGenerator(schemaObject, testRequirements,
@@ -124,19 +126,20 @@ public class Go {
 	    System.out.println("Num Evaluations (test cases only): " + report.getNumDataEvaluations(true));
 	    System.out.println("Num Evaluations (all): " + report.getNumEvaluations(false));
 
-	    
-	    System.out.println("=================================Before Post-Reduce===============================");
-	    System.out.println("Number of Test Cases: " + testSuite.getTestCases().size());	    
-	    System.out.println("=================================After Post-Reduce================================");
-	    TestSuiteReduction reduce = new TestSuiteReduction(testSuite, testRequirements);
-	    //reduce.reducedTestSuiteByEqualTCs();
-	    reduce.reducedTestSuiteByEqualPredicateData();
-	    testSuite = reduce.getReducedTestSuite();
-	    //TestSuiteReductionByPredicate reducePredicate = new TestSuiteReductionByPredicate(testSuite, testRequirements);
-	    //testSuite = reducePredicate.reduce();
-	    System.out.println("Number of Test Cases: " + testSuite.getTestCases().size());
-	    System.out.println("==================================================================================");
-
+	    if (reduction.equals("eqltc") || reduction.equals("eqltr")) {
+        	    System.out.println("=================================Before Post-Reduce===============================");
+        	    System.out.println("Number of Test Cases: " + testSuite.getTestCases().size());	    
+        	    System.out.println("=================================After Post-Reduce================================");
+        	    TestSuiteReduction reduce = new TestSuiteReduction(testSuite, testRequirements);
+        	    if (reduction.equals("eqltc")) {
+        		reduce.reducedTestSuiteByEqualTCs();
+        	    } else {
+        		reduce.reducedTestSuiteByEqualPredicateData();
+        	    }
+        	    testSuite = reduce.getReducedTestSuite();
+        	    System.out.println("Number of Test Cases: " + testSuite.getTestCases().size());
+        	    System.out.println("==================================================================================");
+    	    }
 	    
 	    if (printTR) {
 		printTRs(testRequirements);
