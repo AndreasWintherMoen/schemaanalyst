@@ -16,6 +16,11 @@ public class TestSuiteReduction {
     private TestSuite reducedTS;
     private TestRequirements testRequirements;
 
+    public TestSuiteReduction(TestSuite nonReducdedTS) {
+	this.nonReducdedTS = nonReducdedTS;
+	this.testRequirements = null;
+    }
+    
     public TestSuiteReduction(TestSuite nonReducdedTS, TestRequirements testRequirements) {
 	this.nonReducdedTS = nonReducdedTS;
 	this.testRequirements = testRequirements;
