@@ -27,6 +27,7 @@ import org.schemaanalyst.testgeneration.TestSuiteGenerationReport;
 import org.schemaanalyst.testgeneration.TestSuiteGenerator;
 import org.schemaanalyst.testgeneration.coveragecriterion.CoverageCriterionFactory;
 import org.schemaanalyst.testgeneration.coveragecriterion.TestRequirements;
+import org.schemaanalyst.util.TestSuiteReduction;
 import org.schemaanalyst.util.csv.CSVFileWriter;
 import org.schemaanalyst.util.csv.CSVResult;
 import org.schemaanalyst.util.runner.Parameter;
@@ -70,6 +71,11 @@ public class MutationAnalysis extends Runner {
      */
     @Parameter("The data generator to use.")
     protected String dataGenerator = "avsDefaults";
+    /**
+     * The data generator to use.
+     */
+    @Parameter("Post generation test suite reduction. Options: none (default), eqltc (Equal Test Cases), eqltr (Equal Test Requirements)\"")
+    protected String reduce = "none";
     /**
      * The maximum fitness evaluations when generating data.
      */
@@ -163,15 +169,17 @@ public class MutationAnalysis extends Runner {
         final TestSuite suite = Timing.timedTask(new Callable<TestSuite>() {
             @Override
             public TestSuite call() throws Exception {
-                return instantiateTestSuite();
+                return instantiateTestSuiteWithReduction(reduce);
             }
         }, testGenerationTime);
+        
         final List<Mutant<Schema>> mutants = Timing.timedTask(new Callable<List<Mutant<Schema>>>() {
             @Override
             public List<Mutant<Schema>> call() throws Exception {
                 return generateMutants();
             }
         }, mutantGenerationTime);
+        
         final TestSuiteResult originalResults = Timing.timedTask(new Callable<TestSuiteResult>() {
             @Override
             public TestSuiteResult call() throws Exception {
@@ -208,6 +216,7 @@ public class MutationAnalysis extends Runner {
         result.addValue("scoredenominator", mutants.size());
         result.addValue("technique", technique);
         result.addValue("transactions", useTransactions);
+        result.addValue("testSuiteReduction", reduce);
         result.addValue("testgenerationtime", testGenerationTime.getTime());
         result.addValue("mutantgenerationtime", mutantGenerationTime.getTime());
         result.addValue("originalresultstime", originalResultsTime.getTime());
@@ -266,6 +275,31 @@ public class MutationAnalysis extends Runner {
     private TestSuite instantiateTestSuite() {
         if (inputTestSuite == null) {
             return generateTestSuite();
+        } else {
+            return loadTestSuite();
+        }
+    }
+    
+    /**
+     * Generates the test suite according to the algorithm and criterion.
+     * Also it include redcution
+     *
+     * @return The test suite
+     */
+    private TestSuite instantiateTestSuiteWithReduction(String reductionType) {
+        if (inputTestSuite == null) {
+            TestSuite suite = generateTestSuite();
+            // Reduction of test suite
+            if (reductionType.equals("eqltc") || reductionType.equals("eqltr")) {
+                TestSuiteReduction reduction = new TestSuiteReduction(suite);
+                if (reductionType.equals("eqltc")) {
+            		reduction.reducedTestSuiteByEqualTCs();
+                } else {
+            		reduction.reducedTestSuiteByEqualPredicateData();
+                }
+                suite = reduction.getReducedTestSuite();
+            }
+            return suite;
         } else {
             return loadTestSuite();
         }
