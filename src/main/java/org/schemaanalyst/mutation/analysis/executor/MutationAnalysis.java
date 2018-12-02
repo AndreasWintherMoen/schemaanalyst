@@ -27,6 +27,7 @@ import org.schemaanalyst.testgeneration.TestSuiteGenerationReport;
 import org.schemaanalyst.testgeneration.TestSuiteGenerator;
 import org.schemaanalyst.testgeneration.coveragecriterion.CoverageCriterionFactory;
 import org.schemaanalyst.testgeneration.coveragecriterion.TestRequirements;
+import org.schemaanalyst.util.OptimizePredicates;
 import org.schemaanalyst.util.TestSuiteReduction;
 import org.schemaanalyst.util.csv.CSVFileWriter;
 import org.schemaanalyst.util.csv.CSVResult;
@@ -72,10 +73,16 @@ public class MutationAnalysis extends Runner {
     @Parameter("The data generator to use.")
     protected String dataGenerator = "avsDefaults";
     /**
-     * The data generator to use.
+     * Post generation test suite reduction. Options: none (default), eqltc (Equal Test Cases), eqltr (Equal Test Requirements).
      */
-    @Parameter("Post generation test suite reduction. Options: none (default), eqltc (Equal Test Cases), eqltr (Equal Test Requirements)\"")
+    @Parameter("Post generation test suite reduction. Options: none (default), eqltc (Equal Test Cases), eqltr (Equal Test Requirements).")
     protected String reduce = "none";
+    /**
+     * If added it will reduce the generated predicates generated for each test requirements
+     */
+    @Parameter("If added it will reduce the generated predicates generated for each test requirements. Default is false.")
+    protected boolean reducePredicates = false;
+
     /**
      * The maximum fitness evaluations when generating data.
      */
@@ -313,6 +320,12 @@ public class MutationAnalysis extends Runner {
         // Filter and reduce test requirements
         testRequirements.filterInfeasible();
         testRequirements.reduce();
+        
+        if (reducePredicates) {
+            // This will reduce the number of predicates in ORs
+            OptimizePredicates op = new OptimizePredicates(testRequirements);
+            op.doAll();
+        }
 
         // Construct generator
         final TestSuiteGenerator generator = new TestSuiteGenerator(

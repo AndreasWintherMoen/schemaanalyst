@@ -26,6 +26,9 @@ public class MutationCommand {
   public boolean transactions = false;
   
   @Parameter(names = {"--reduce"}, description = "Post generation test suite reduction. Options: none (default), eqltc (Equal Test Cases), eqltr (Equal Test Requirements)")
-  protected String reduce = "none";
+  public String reduce = "none";
+  
+  @Parameter(names = {"--reduceP","-rp","--reducePredicates"}, description = "If added it will reduce the generated predicates generated for each test requirments")
+  public boolean reducePredicates = false;
 
 }
