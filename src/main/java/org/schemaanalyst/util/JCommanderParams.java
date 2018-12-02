@@ -27,6 +27,9 @@ public class JCommanderParams {
   @Parameter(names = {"--reduce"}, description = "Post generation test suite reduction. Options: none (default), eqltc (Equal Test Cases), eqltr (Equal Test Requirements)")
   protected String reduce = "none";
   
+  @Parameter(names = {"--reduceP","-rp","--reducePredicates"}, description = "If added it will reduce the generated predicates generated for each test requirments")
+  protected boolean reducePredicates = false;
+  
   @Parameter(names = {"--printTR","-ptr","--printTestRequriments"}, description = "Print Test Requriments")
   protected boolean printTR = false;
   
