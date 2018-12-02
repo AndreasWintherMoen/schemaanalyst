@@ -52,6 +52,8 @@ public class Go {
 	long randomseed = jcp.randomseed;
 
 	boolean printTR = jcp.printTR;
+	
+	boolean reducePredicates = jcp.reducePredicates;
 
 	String classname;
 
@@ -67,7 +69,8 @@ public class Go {
 	    String[] pargs = new String[] { schema, "--criterion=" + criterion, "--dataGenerator=" + datagenerator,
 		    "--maxevaluations=" + mc.maxEvaluations, "--randomseed=" + mc.seed,
 		    "--mutationPipeline=" + mc.pipeline, "--technique=" + mc.technique,
-		    "--useTransactions=" + mc.transactions, "--reduce=" + mc.reduce };
+		    "--useTransactions=" + mc.transactions, "--reduce=" + mc.reduce,
+		    "--reducePredicates=" + mc.reducePredicates};
 
 	    MutationAnalysis.main(pargs);
 
@@ -101,6 +104,12 @@ public class Go {
 	    testRequirements.filterInfeasible();
 	    testRequirements.reduce();
 	    
+	    if (reducePredicates) {
+		// This will reduce the number of predicates in ORs
+		OptimizePredicates op = new OptimizePredicates(testRequirements);
+		op.doAll();
+	    }
+	    //System.exit(0);
 	    //System.out.println("===========================After Reducing Test Require============================");
 	    //System.out.println("Number of Test Requirements: " + testRequirements.getTestRequirements().size());	    
 
