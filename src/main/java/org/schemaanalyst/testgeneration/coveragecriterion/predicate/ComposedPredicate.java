@@ -22,6 +22,11 @@ public abstract class ComposedPredicate extends Predicate {
     public List<Predicate> getSubPredicates() {
         return new ArrayList<>(subPredicates);
     }
+    
+    // Added by Abdullah
+    public boolean removeSubPredicate(Object object) {
+	return subPredicates.remove(object);
+    }
 
     public int numSubPredicates() {
         return subPredicates.size();
