@@ -20,3 +20,5 @@ SchemaAnalyst.iml
 .DS_Store
 /.idea/
 /out/
+*.py
+*.properties
