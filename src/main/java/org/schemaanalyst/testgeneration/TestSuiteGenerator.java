@@ -145,6 +145,8 @@ public class TestSuiteGenerator {
 
                 DataGenerationReport dataGenerationReport = dataGenerator.generateData(data, state, predicate);
                 if (dataGenerationReport.isSuccess()) {
+                    ReduecTestCase reduction = new ReduecTestCase();
+                    reduction.reduceData(data, schema);
                     TestCase testCase = new TestCase(testRequirement, data, state);
                     testSuite.addTestCase(testCase);
 
