@@ -255,6 +255,15 @@ public class Data implements Serializable {
     public List<Row> getRows(Table table, Column... columns) {
         return getRows(table, Arrays.asList(columns));
     }
+    
+    /**
+     * Added by Abdullah
+     * A method that removes a spefic table
+     * @param table The table of the columns for which cell values are sought.
+     */
+    public void removeTable(Table table) {
+        data.remove(table);
+    }
 
     /**
      * Copies the values from the other data object into this
