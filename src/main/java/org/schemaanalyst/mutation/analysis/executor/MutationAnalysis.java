@@ -78,6 +78,11 @@ public class MutationAnalysis extends Runner {
     @Parameter("Post generation test suite reduction. Options: none (default), eqltc (Equal Test Cases), eqltr (Equal Test Requirements).")
     protected String reduce = "none";
     /**
+     * Full reduce reduces test requirements, test case statements, equal test requirements and equal test cases. Default is deactivated
+     */
+    @Parameter("Post generation test suite reduction. Options: none (default), eqltc (Equal Test Cases), eqltr (Equal Test Requirements).")
+    protected boolean fullreduce = false;
+    /**
      * If added it will reduce the generated predicates generated for each test requirements
      */
     @Parameter("If added it will reduce the generated predicates generated for each test requirements. Default is false.")
@@ -170,13 +175,18 @@ public class MutationAnalysis extends Runner {
         StopWatch mutantGenerationTime = new StopWatch();
         StopWatch originalResultsTime = new StopWatch();
         StopWatch mutationAnalysisTime = new StopWatch();
+        // set all reduction techniques to true if full reduction
+        if (fullreduce) {
+        	this.reduce = "fullreduce";
+        	this.reducePredicates = true;
+        }
         totalTime.start();
 
         // Generate test suite and mutants, apply mutation analysis technique
         final TestSuite suite = Timing.timedTask(new Callable<TestSuite>() {
             @Override
             public TestSuite call() throws Exception {
-                return instantiateTestSuiteWithReduction(reduce);
+                return instantiateTestSuiteWithReduction(reduce, fullreduce);
             }
         }, testGenerationTime);
         
@@ -223,6 +233,7 @@ public class MutationAnalysis extends Runner {
         result.addValue("scoredenominator", mutants.size());
         result.addValue("technique", technique);
         result.addValue("transactions", useTransactions);
+        result.addValue("fullreduce", fullreduce);
         result.addValue("testSuiteReduction", reduce);
         result.addValue("reducePredicates", reducePredicates);
         result.addValue("testgenerationtime", testGenerationTime.getTime());
@@ -294,7 +305,7 @@ public class MutationAnalysis extends Runner {
      *
      * @return The test suite
      */
-    private TestSuite instantiateTestSuiteWithReduction(String reductionType) {
+    private TestSuite instantiateTestSuiteWithReduction(String reductionType, boolean fullreduce) {
         if (inputTestSuite == null) {
             TestSuite suite = generateTestSuite();
             // Reduction of test suite
@@ -307,6 +318,14 @@ public class MutationAnalysis extends Runner {
                 }
                 suite = reduction.getReducedTestSuite();
             }
+            
+            if (fullreduce) {
+                TestSuiteReduction reduction = new TestSuiteReduction(suite);
+        		reduction.reducedTestSuiteByEqualTCs();
+        		reduction.reducedTestSuiteByEqualPredicateData();
+                suite = reduction.getReducedTestSuite();
+            }
+            
             return suite;
         } else {
             return loadTestSuite();
@@ -322,7 +341,7 @@ public class MutationAnalysis extends Runner {
         testRequirements.filterInfeasible();
         testRequirements.reduce();
         
-        if (reducePredicates) {
+        if (reducePredicates || fullreduce) {
             // This will reduce the number of predicates in ORs
             OptimizePredicates op = new OptimizePredicates(testRequirements);
             op.doAll();
@@ -333,7 +352,8 @@ public class MutationAnalysis extends Runner {
                 schema,
                 testRequirements,
                 dbms.getValueFactory(),
-                dataGen
+                dataGen,
+                fullreduce || reduce.equals("reduceTC")
         );
 
         // Generate suite
