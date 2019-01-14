@@ -25,10 +25,13 @@ public class MutationCommand {
   @Parameter(names = "--transactions", description = "Whether to use transactions with this technique (if possible).")
   public boolean transactions = false;
   
-  @Parameter(names = {"--reduce"}, description = "Post generation test suite reduction. Options: none (default), eqltc (Equal Test Cases), eqltr (Equal Test Requirements)")
+  @Parameter(names = {"--reduce"}, description = "Post generation test suite reduction. Options: none (default), eqltc (Equal Test Cases), eqltr (Equal Test Requirements), reduceTC (Reduce Test Cases INSERTS)")
   public String reduce = "none";
   
   @Parameter(names = {"--reduceP","-rp","--reducePredicates"}, description = "If added it will reduce the generated predicates generated for each test requirments")
   public boolean reducePredicates = false;
+  
+  @Parameter(names = {"--fullreduce","-fr"}, description = "Full reduce reduces test requirements, test case statements, equal test requirements and equal test cases. Default is deactivated")
+  protected boolean fullreduce = false;
 
 }
