@@ -27,256 +27,280 @@ import java.util.logging.Logger;
  */
 public class TestSuiteGenerator {
 
-    private final static Logger LOGGER = Logger.getLogger(TestSuiteGenerator.class.getName());
+	private final static Logger LOGGER = Logger.getLogger(TestSuiteGenerator.class.getName());
 
-    private Schema schema;
-    private TestRequirements testRequirements;
-    private ValueFactory valueFactory;
-    private DataGenerator dataGenerator;
-    private HashMap<Table, Data> initialTableData;
-    private TestSuite testSuite;
-    private TestSuiteGenerationReport testSuiteGenerationReport;
+	private Schema schema;
+	private TestRequirements testRequirements;
+	private ValueFactory valueFactory;
+	private DataGenerator dataGenerator;
+	private HashMap<Table, Data> initialTableData;
+	private TestSuite testSuite;
+	private TestSuiteGenerationReport testSuiteGenerationReport;
+	private boolean fullreduce = false;
+	public int noneRemovedInsertsCount = 0;
+	public int reducedInsertsCount = 0;
 
-    public TestSuiteGenerator(Schema schema,
-                              TestRequirements testRequirements,
-                              ValueFactory valueFactory,
-                              DataGenerator dataGenerator) {
-        this.schema = schema;
-        this.testRequirements = testRequirements;
-        this.valueFactory = valueFactory;
-        this.dataGenerator = dataGenerator;
 
-        initialTableData = new HashMap<>();
-    }
+	public TestSuiteGenerator(Schema schema, TestRequirements testRequirements, ValueFactory valueFactory,
+			DataGenerator dataGenerator) {
+		this.schema = schema;
+		this.testRequirements = testRequirements;
+		this.valueFactory = valueFactory;
+		this.dataGenerator = dataGenerator;
 
-    public TestSuite generate() {
-        LOGGER.fine("Generating test suite for " + schema);
+		initialTableData = new HashMap<>();
+	}
 
-        testSuite = new TestSuite();
-        testSuiteGenerationReport = new TestSuiteGenerationReport();
-        generateInitialTableData();
-        generateTestCases();
-        return testSuite;
-    }
+	public TestSuiteGenerator(Schema schema, TestRequirements testRequirements, ValueFactory valueFactory,
+			DataGenerator dataGenerator, boolean fullreduce) {
+		this.schema = schema;
+		this.testRequirements = testRequirements;
+		this.valueFactory = valueFactory;
+		this.dataGenerator = dataGenerator;
+		this.fullreduce = fullreduce;
 
-    public TestSuiteGenerationReport getTestSuiteGenerationReport() {
-        return testSuiteGenerationReport;
-    }
+		initialTableData = new HashMap<>();
+	}
 
-    protected void generateInitialTableData() {
-        for (Table table : schema.getTablesInOrder()) {
+	public TestSuite generate() {
+		LOGGER.fine("Generating test suite for " + schema);
 
-            ComposedPredicate acceptancePredicate = PredicateGenerator.generatePredicate(schema.getConstraints(table));
+		testSuite = new TestSuite();
+		testSuiteGenerationReport = new TestSuiteGenerationReport();
+		generateInitialTableData();
+		generateTestCases();
+		return testSuite;
+	}
 
-            // add not null predicates
-            List<Column> notNullColumns = table.getColumns();
+	public TestSuiteGenerationReport getTestSuiteGenerationReport() {
+		return testSuiteGenerationReport;
+	}
 
-            /*
-            // NOTE: selecting individual columns like this will cause AUCC test requirements to fail.
+	protected void generateInitialTableData() {
+		for (Table table : schema.getTablesInOrder()) {
 
-            List<Column> notNullColumns = new ArrayList<>();
-            PrimaryKeyConstraint primaryKeyConstraint = schema.getPrimaryKeyConstraint(table);
-            if (primaryKeyConstraint != null) {
-                // TODO: some check as to whether it's been added already ...
-                notNullColumns.addAll(primaryKeyConstraint.getColumns());
-            }
-            for (UniqueConstraint uniqueConstraint : schema.getUniqueConstraints(table)) {
-                notNullColumns.addAll(uniqueConstraint.getColumns());
-            }
-            for (ForeignKeyConstraint foreignKeyConstraint : schema.getForeignKeyConstraints(table)) {
-                notNullColumns.addAll(foreignKeyConstraint.getColumns());
-            }
-            */
-            AndPredicate predicate = new AndPredicate();
-            predicate.addPredicate(acceptancePredicate);
-            PredicateGenerator.addNullPredicates(predicate, table, notNullColumns, false);
+			ComposedPredicate acceptancePredicate = PredicateGenerator.generatePredicate(schema.getConstraints(table));
 
-            LOGGER.fine("\nGENERATING INITIAL TABLE DATA FOR " + table);
-            LOGGER.fine("--- Predicate is " + predicate);
+			// add not null predicates
+			List<Column> notNullColumns = table.getColumns();
 
-            // add referenced tables to the state
-            Data state = new Data();
-            boolean haveLinkedData = addInitialTableDataToState(state, table);
-            if (haveLinkedData) {
-                // generate the row
-                Data data = new Data();
-                data.addRow(table, valueFactory);
-                DataGenerationReport dataGenerationReport = dataGenerator.generateData(data, state, predicate);
-                if (dataGenerationReport.isSuccess()) {
-                    LOGGER.fine("--- Success, generated in " + dataGenerationReport.getNumEvaluations() + " evaluations");
-                    LOGGER.fine("--- Data is: \n" + data);
-                    initialTableData.put(table, data);
-                } else {
-                    LOGGER.fine("--- Failed");
-                }
+			/*
+			 * // NOTE: selecting individual columns like this will cause AUCC
+			 * test requirements to fail.
+			 * 
+			 * List<Column> notNullColumns = new ArrayList<>();
+			 * PrimaryKeyConstraint primaryKeyConstraint =
+			 * schema.getPrimaryKeyConstraint(table); if (primaryKeyConstraint
+			 * != null) { // TODO: some check as to whether it's been added
+			 * already ...
+			 * notNullColumns.addAll(primaryKeyConstraint.getColumns()); } for
+			 * (UniqueConstraint uniqueConstraint :
+			 * schema.getUniqueConstraints(table)) {
+			 * notNullColumns.addAll(uniqueConstraint.getColumns()); } for
+			 * (ForeignKeyConstraint foreignKeyConstraint :
+			 * schema.getForeignKeyConstraints(table)) {
+			 * notNullColumns.addAll(foreignKeyConstraint.getColumns()); }
+			 */
+			AndPredicate predicate = new AndPredicate();
+			predicate.addPredicate(acceptancePredicate);
+			PredicateGenerator.addNullPredicates(predicate, table, notNullColumns, false);
 
-                testSuiteGenerationReport.addInitialTableDataResult(
-                        table, new DataGenerationResult(data, state, dataGenerationReport));
-            } else {
-                // there was no linked data generated to add to the state, so generated of this row failed by default
-                testSuiteGenerationReport.addInitialTableDataResult(
-                        table, null);
-            }
-        }
-    }
+			LOGGER.fine("\nGENERATING INITIAL TABLE DATA FOR " + table);
+			LOGGER.fine("--- Predicate is " + predicate);
 
-    protected void generateTestCases() {
-        for (TestRequirement testRequirement : testRequirements.getTestRequirements()) {
+			// add referenced tables to the state
+			Data state = new Data();
+			boolean haveLinkedData = addInitialTableDataToState(state, table);
+			if (haveLinkedData) {
+				// generate the row
+				Data data = new Data();
+				data.addRow(table, valueFactory);
+				DataGenerationReport dataGenerationReport = dataGenerator.generateData(data, state, predicate);
+				if (dataGenerationReport.isSuccess()) {
+					LOGGER.fine(
+							"--- Success, generated in " + dataGenerationReport.getNumEvaluations() + " evaluations");
+					LOGGER.fine("--- Data is: \n" + data);
+					initialTableData.put(table, data);
+				} else {
+					LOGGER.fine("--- Failed");
+				}
 
-            Predicate predicate = testRequirement.getPredicate();
-            Table table = getTestRequirementTable(testRequirement);
+				testSuiteGenerationReport.addInitialTableDataResult(table,
+						new DataGenerationResult(data, state, dataGenerationReport));
+			} else {
+				// there was no linked data generated to add to the state, so
+				// generated of this row failed by default
+				testSuiteGenerationReport.addInitialTableDataResult(table, null);
+			}
+		}
+	}
 
-            LOGGER.fine("\nGENERATING TEST CASE");
-            for (TestRequirementDescriptor testRequirementDescriptor : testRequirement.getDescriptors()) {
-                LOGGER.fine(testRequirementDescriptor.toString());
-            }
-            LOGGER.fine("--- Predicate is " + predicate);
+	protected void generateTestCases() {
+		for (TestRequirement testRequirement : testRequirements.getTestRequirements()) {
 
-            Data state = new Data();
-            Data data = new Data();
-            predicate = addAdditionalRows(state, data, predicate, table, testRequirement.getRequiresComparisonRow());
+			Predicate predicate = testRequirement.getPredicate();
+			Table table = getTestRequirementTable(testRequirement);
 
-            if (predicate != null) {
-                data.addRow(table, valueFactory);
+			LOGGER.fine("\nGENERATING TEST CASE");
+			for (TestRequirementDescriptor testRequirementDescriptor : testRequirement.getDescriptors()) {
+				LOGGER.fine(testRequirementDescriptor.toString());
+			}
+			LOGGER.fine("--- Predicate is " + predicate);
 
-                LOGGER.fine("--- Pre-reduced predicate is " + predicate);
-                predicate = predicate.reduce();
-                LOGGER.fine("--- Reduced predicate is " + predicate);
+			Data state = new Data();
+			Data data = new Data();
+			predicate = addAdditionalRows(state, data, predicate, table, testRequirement.getRequiresComparisonRow());
 
-                DataGenerationReport dataGenerationReport = dataGenerator.generateData(data, state, predicate);
-                if (dataGenerationReport.isSuccess()) {
-                    ReduecTestCase reduction = new ReduecTestCase();
-                    reduction.reduceData(data, schema);
-                    TestCase testCase = new TestCase(testRequirement, data, state);
-                    testSuite.addTestCase(testCase);
+			if (predicate != null) {
+				data.addRow(table, valueFactory);
 
-                    LOGGER.fine("--- SUCCESS, generated in " + dataGenerationReport.getNumEvaluations() + " evaluations");
-                    LOGGER.fine("--- Data is \n" + data);
-                } else {
-                    LOGGER.fine("--- FAILED");
-                }
+				LOGGER.fine("--- Pre-reduced predicate is " + predicate);
+				predicate = predicate.reduce();
+				LOGGER.fine("--- Reduced predicate is " + predicate);
 
-                testSuiteGenerationReport.addTestRequirementResult(
-                        testRequirement, new DataGenerationResult(data, state, dataGenerationReport));
-            } else  {
-                testSuiteGenerationReport.addTestRequirementResult(
-                        testRequirement, null);
-            }
-        }
-    }
+				DataGenerationReport dataGenerationReport = dataGenerator.generateData(data, state, predicate);
+				if (dataGenerationReport.isSuccess()) {
+					if (fullreduce) {
+						noneRemovedInsertsCount = noneRemovedInsertsCount + data.getNumRows();
+						ReduecTestCase reduction = new ReduecTestCase();
+						reduction.reduceData(data, schema);
+						reducedInsertsCount = reducedInsertsCount + data.getNumRows();
+					}
+					TestCase testCase = new TestCase(testRequirement, data, state);
+					testSuite.addTestCase(testCase);
 
-    protected Table getTestRequirementTable(TestRequirement testRequirement) {
-        Set<Table> tables = testRequirement.getTables();
-        if (tables.size() != 1) {
-            throw new TestGenerationException("Test requirement  should have predicates involving exactly one table, has " + tables.size() + ". Test requirement is: \n" + testRequirement);
-        }
-        return tables.iterator().next();
-    }
+					LOGGER.fine(
+							"--- SUCCESS, generated in " + dataGenerationReport.getNumEvaluations() + " evaluations");
+					LOGGER.fine("--- Data is \n" + data);
+				} else {
+					LOGGER.fine("--- FAILED");
+				}
 
-    protected Predicate addAdditionalRows(Data state, Data data, Predicate predicate, Table table, boolean requiresComparisonRow) {
-        LOGGER.fine("--- adding additional rows");
+				testSuiteGenerationReport.addTestRequirementResult(testRequirement,
+						new DataGenerationResult(data, state, dataGenerationReport));
+			} else {
+				testSuiteGenerationReport.addTestRequirementResult(testRequirement, null);
+			}
+		}
+	}
 
-        boolean haveLinkedData = addInitialTableDataToState(state, table);
-        if (!haveLinkedData) {
-            return null;
-        }
+	protected Table getTestRequirementTable(TestRequirement testRequirement) {
+		Set<Table> tables = testRequirement.getTables();
+		if (tables.size() != 1) {
+			throw new TestGenerationException(
+					"Test requirement  should have predicates involving exactly one table, has " + tables.size()
+							+ ". Test requirement is: \n" + testRequirement);
+		}
+		return tables.iterator().next();
+	}
 
-        if (requiresComparisonRow) { // if (getRequiresComparisonRow(predicate)) {
-            Data comparisonRow = initialTableData.get(table);
-            if (comparisonRow == null) {
-                LOGGER.fine("--- could not add comparison row, data generation FAILED");
-                return null;
-            }
+	protected Predicate addAdditionalRows(Data state, Data data, Predicate predicate, Table table,
+			boolean requiresComparisonRow) {
+		LOGGER.fine("--- adding additional rows");
 
-            LOGGER.fine("--- added comparison row");
-            state.appendData(comparisonRow);
+		boolean haveLinkedData = addInitialTableDataToState(state, table);
+		if (!haveLinkedData) {
+			return null;
+		}
 
-            predicate = addLinkedTableRowsToData(data, predicate, table);
-        }
-        return predicate;
-    }
+		if (requiresComparisonRow) { // if (getRequiresComparisonRow(predicate))
+										// {
+			Data comparisonRow = initialTableData.get(table);
+			if (comparisonRow == null) {
+				LOGGER.fine("--- could not add comparison row, data generation FAILED");
+				return null;
+			}
 
-    protected boolean addInitialTableDataToState(Data state, Table table) {
-        LOGGER.fine("--- adding initial data to state for linked tables");
+			LOGGER.fine("--- added comparison row");
+			state.appendData(comparisonRow);
 
-        // add rows for tables linked via foreign keys to the state
-        List<Table> linkedTables = schema.getConnectedTables(table);
-        for (Table linkedTable : linkedTables) {
+			predicate = addLinkedTableRowsToData(data, predicate, table);
+		}
+		return predicate;
+	}
 
-            // a row should always have been previously-generated
-            // for a linked table
-            if (!linkedTable.equals(table)) {
-                Data initialData = initialTableData.get(linkedTable);
+	protected boolean addInitialTableDataToState(Data state, Table table) {
+		LOGGER.fine("--- adding initial data to state for linked tables");
 
-                // cannot generate data in this instance
-                if (initialData == null) {
-                    return false;
-                }
-                state.appendData(initialData);
-            }
-        }
-        return true;
-    }
+		// add rows for tables linked via foreign keys to the state
+		List<Table> linkedTables = schema.getConnectedTables(table);
+		for (Table linkedTable : linkedTables) {
 
-    protected Predicate addLinkedTableRowsToData(Data data, Predicate predicate, Table table) {
+			// a row should always have been previously-generated
+			// for a linked table
+			if (!linkedTable.equals(table)) {
+				Data initialData = initialTableData.get(linkedTable);
 
-        for (ForeignKeyConstraint foreignKeyConstraint : schema.getForeignKeyConstraints(table)) {
+				// cannot generate data in this instance
+				if (initialData == null) {
+					return false;
+				}
+				state.appendData(initialData);
+			}
+		}
+		return true;
+	}
 
-            Table refTable = foreignKeyConstraint.getReferenceTable();
-            if (!refTable.equals(table)) {
+	protected Predicate addLinkedTableRowsToData(Data data, Predicate predicate, Table table) {
 
-                boolean refColsUnique = areRefColsUnique(predicate, foreignKeyConstraint);
+		for (ForeignKeyConstraint foreignKeyConstraint : schema.getForeignKeyConstraints(table)) {
 
-                if (refColsUnique) {
-                    LOGGER.fine("--- foreign key columns are unique in " + table);
+			Table refTable = foreignKeyConstraint.getReferenceTable();
+			if (!refTable.equals(table)) {
 
-                    // append the predicate with the acceptance predicate of the original
-                    AndPredicate newPredicate = new AndPredicate();
-                    newPredicate.addPredicate(predicate);
-                    newPredicate.addPredicate(PredicateGenerator.generatePredicate(schema.getConstraints(refTable)));
-                    predicate = newPredicate;
+				boolean refColsUnique = areRefColsUnique(predicate, foreignKeyConstraint);
 
-                    LOGGER.fine("--- new predicate is " + predicate);
+				if (refColsUnique) {
+					LOGGER.fine("--- foreign key columns are unique in " + table);
 
-                    LOGGER.fine("--- adding foreign key row for " + refTable);
-                    predicate = addLinkedTableRowsToData(data, predicate, refTable);
-                    data.addRow(refTable, valueFactory);
-                }
-            }
-        }
+					// append the predicate with the acceptance predicate of the
+					// original
+					AndPredicate newPredicate = new AndPredicate();
+					newPredicate.addPredicate(predicate);
+					newPredicate.addPredicate(PredicateGenerator.generatePredicate(schema.getConstraints(refTable)));
+					predicate = newPredicate;
 
-        return predicate;
-    }
+					LOGGER.fine("--- new predicate is " + predicate);
 
-    protected boolean areRefColsUnique(Predicate predicate, ForeignKeyConstraint foreignKeyConstraint) {
-        //Table table = foreignKeyConstraint.getTable();
-        final List<Column> uniqueColumns = new ArrayList<>();
+					LOGGER.fine("--- adding foreign key row for " + refTable);
+					predicate = addLinkedTableRowsToData(data, predicate, refTable);
+					data.addRow(refTable, valueFactory);
+				}
+			}
+		}
 
-        /*
-        if (schema.hasPrimaryKeyConstraint(table)) {
-            uniqueColumns.addAll(schema.getPrimaryKeyConstraint(table).getColumns());
-        }
+		return predicate;
+	}
 
-        for (UniqueConstraint uniqueConstraint : schema.getUniqueConstraints(table)) {
-            uniqueColumns.addAll(uniqueConstraint.getColumns());
-        }
-        */
+	protected boolean areRefColsUnique(Predicate predicate, ForeignKeyConstraint foreignKeyConstraint) {
+		// Table table = foreignKeyConstraint.getTable();
+		final List<Column> uniqueColumns = new ArrayList<>();
 
-        predicate.accept(new PredicateAdaptor() {
-            @Override
-            public void visit(MatchPredicate predicate) {
-                if (predicate.tableIsRefTable()) {
-                    uniqueColumns.addAll(predicate.getColumns());
-                }
-            }
-        });
+		/*
+		 * if (schema.hasPrimaryKeyConstraint(table)) {
+		 * uniqueColumns.addAll(schema.getPrimaryKeyConstraint(table).getColumns
+		 * ()); }
+		 * 
+		 * for (UniqueConstraint uniqueConstraint :
+		 * schema.getUniqueConstraints(table)) {
+		 * uniqueColumns.addAll(uniqueConstraint.getColumns()); }
+		 */
 
-        for (Column column : foreignKeyConstraint.getColumns()) {
-            if (!uniqueColumns.contains(column)) {
-                return false;
-            }
-        }
+		predicate.accept(new PredicateAdaptor() {
+			@Override
+			public void visit(MatchPredicate predicate) {
+				if (predicate.tableIsRefTable()) {
+					uniqueColumns.addAll(predicate.getColumns());
+				}
+			}
+		});
 
-        return true;
-    }
+		for (Column column : foreignKeyConstraint.getColumns()) {
+			if (!uniqueColumns.contains(column)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
 }
