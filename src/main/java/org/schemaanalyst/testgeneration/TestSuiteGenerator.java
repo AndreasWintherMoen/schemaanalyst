@@ -163,7 +163,7 @@ public class TestSuiteGenerator {
 					if (fullreduce) {
 						noneRemovedInsertsCount = noneRemovedInsertsCount + data.getNumRows();
 						ReduecTestCase reduction = new ReduecTestCase();
-						reduction.reduceData(data, schema);
+						reduction.reduceData(data, state, schema);
 						reducedInsertsCount = reducedInsertsCount + data.getNumRows();
 					}
 					TestCase testCase = new TestCase(testRequirement, data, state);
