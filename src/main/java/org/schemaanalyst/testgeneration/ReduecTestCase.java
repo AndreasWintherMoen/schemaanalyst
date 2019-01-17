@@ -15,70 +15,69 @@ import org.schemaanalyst.sqlrepresentation.constraint.ForeignKeyConstraint;
 
 public class ReduecTestCase {
 
-    private Schema schema;
-    
-    
 	public void reduceData(Data data, Data state, Schema schema) {
-	List<Table> tables = data.getTables();
-	
-	for (Table table : tables) {
-	    List<ForeignKeyConstraint> fks = schema.getForeignKeyConstraints(table);
-	    
-	    for (ForeignKeyConstraint fk : fks) {
-	    	// a hack for self-ref
-	    	if (!fk.getTable().equals(fk.getReferenceTable())) {
-				// Cookies (child)
-				List<Column> columns = fk.getColumns();
-				// Parent
-				List<Column> refCol = fk.getReferenceColumns();
-				
-				List<Row> childData = data.getRows(table, columns);
-				List<Row> parentData = data.getRows(fk.getReferenceTable(), refCol);
-				
-				// State table values
-				List<Row> parentState = state.getRows(fk.getReferenceTable(), refCol);
-				
-				List<Value> childValues = new ArrayList<>();
-				List<Value> parentValues = new ArrayList<>();
-				List<Value> parentStateValues = new ArrayList<>();
-				
-				// Getting the values rather than just the names as the column names differ
-				for (Row row : childData) {
-					for (Cell cell : row.getCells()) {
-						childValues.add(cell.getValue());
-					}
-				}
-				
-				for (Row row : parentData) {
-					for (Cell cell : row.getCells()) {
-						parentValues.add(cell.getValue());
-					}
-				}
-				
-				for (Row row : parentState) {
-					for (Cell cell : row.getCells()) {
-						parentStateValues.add(cell.getValue());
-					}
-				}
-				
-				boolean aretheValueEqual = CollectionUtils.isEqualCollection(childValues, parentValues);
-				boolean aretheValueEqualState = CollectionUtils.isEqualCollection(childValues, parentStateValues);
+		List<Table> tables = data.getTables();
 
-				if(!aretheValueEqual) {
-				    data.removeTable(fk.getReferenceTable());
+		for (Table table : tables) {
+			List<ForeignKeyConstraint> fks = schema.getForeignKeyConstraints(table);
+			Table previousTab = new Table("");
+			List<Column> previousCol = new ArrayList<>();
+			for (int i = 0; i < fks.size(); i++) {
+				// a hack for self-ref
+				ForeignKeyConstraint fk = fks.get(i);
+				if (!fk.getTable().equals(fk.getReferenceTable())) {
+					if (!previousTab.equals(fk.getReferenceTable()) && !fk.getReferenceColumns().equals(previousCol)) {
+						// Getting Values rather than just rows
+						List<Value> childValues = new ArrayList<>();
+						List<Value> parentValues = new ArrayList<>();
+						List<Value> parentStateValues = new ArrayList<>();
+
+						// Getting the values rather than just the names as the
+						// column names differ
+						for (Row row : data.getRows(table, fk.getColumns())) {
+							for (Cell cell : row.getCells()) {
+								childValues.add(cell.getValue());
+							}
+						}
+
+						for (Row row : data.getRows(fk.getReferenceTable(), fk.getReferenceColumns())) {
+							for (Cell cell : row.getCells()) {
+								parentValues.add(cell.getValue());
+							}
+						}
+
+						for (Row row : state.getRows(fk.getReferenceTable(), fk.getReferenceColumns())) {
+							for (Cell cell : row.getCells()) {
+								parentStateValues.add(cell.getValue());
+							}
+						}
+						
+						boolean aretheValueEqual = CollectionUtils.isEqualCollection(childValues, parentValues);
+
+						if (fks.size() > i+1 && !aretheValueEqual) {
+							if (fk.getReferenceTable().equals(fks.get(i+1).getReferenceTable())) {
+								ForeignKeyConstraint fk2 = fks.get(i+1);
+								List<Value> childValues2 = new ArrayList<>();
+								// column names differ
+								for (Row row : data.getRows(fk2.getTable(), fk2.getColumns())) {
+									for (Cell cell : row.getCells()) {
+										childValues2.add(cell.getValue());
+									}
+								}
+								aretheValueEqual = CollectionUtils.isEqualCollection(childValues2, parentValues);
+							}
+						}
+
+						if (!aretheValueEqual) {
+							data.removeTable(fk.getReferenceTable());
+						}
+					}
+
+					previousTab = fk.getReferenceTable();
+					previousCol = fk.getReferenceColumns();
 				}
-				
-				if(aretheValueEqualState) {
-				    data.removeTable(fk.getReferenceTable());
-				}
-				
-				// Check equality of prints but this raises and issue of different column names
-				//if(!childData.toString().equals(parentData.toString())) {
-				    //data.removeTable(fk.getReferenceTable());
-				//}
-	    	}
-	    }
+			}
+		}
+
 	}
-	
-    }
 }
