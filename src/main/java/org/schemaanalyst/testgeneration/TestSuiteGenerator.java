@@ -37,8 +37,6 @@ public class TestSuiteGenerator {
 	private TestSuite testSuite;
 	private TestSuiteGenerationReport testSuiteGenerationReport;
 	private boolean fullreduce = false;
-	public int noneRemovedInsertsCount = 0;
-	public int reducedInsertsCount = 0;
 
 
 	public TestSuiteGenerator(Schema schema, TestRequirements testRequirements, ValueFactory valueFactory,
@@ -136,6 +134,8 @@ public class TestSuiteGenerator {
 	}
 
 	protected void generateTestCases() {
+		int noneRemovedInsertsCount = 0;
+		int reducedInsertsCount = 0;
 		for (TestRequirement testRequirement : testRequirements.getTestRequirements()) {
 
 			Predicate predicate = testRequirement.getPredicate();
@@ -160,15 +160,16 @@ public class TestSuiteGenerator {
 
 				DataGenerationReport dataGenerationReport = dataGenerator.generateData(data, state, predicate);
 				if (dataGenerationReport.isSuccess()) {
+					noneRemovedInsertsCount = noneRemovedInsertsCount + data.getNumRows() + state.getNumRows();
 					if (fullreduce) {
-						noneRemovedInsertsCount = noneRemovedInsertsCount + data.getNumRows();
 						ReduecTestCase reduction = new ReduecTestCase();
 						reduction.reduceData(data, state, schema);
-						reducedInsertsCount = reducedInsertsCount + data.getNumRows();
+						reducedInsertsCount = reducedInsertsCount + data.getNumRows() + state.getNumRows();
 					}
 					TestCase testCase = new TestCase(testRequirement, data, state);
 					testSuite.addTestCase(testCase);
-
+					testSuite.addGeneratedInserts(noneRemovedInsertsCount);
+					testSuite.addReducedInsertsCount(reducedInsertsCount);
 					LOGGER.fine(
 							"--- SUCCESS, generated in " + dataGenerationReport.getNumEvaluations() + " evaluations");
 					LOGGER.fine("--- Data is \n" + data);
