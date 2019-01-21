@@ -236,6 +236,9 @@ public class MutationAnalysis extends Runner {
         result.addValue("fullreduce", fullreduce);
         result.addValue("testSuiteReduction", reduce);
         result.addValue("reducePredicates", reducePredicates);
+        result.addValue("originalinsertscount", suite.getGeneratedInserts());
+        result.addValue("reducedinsertscount", suite.getReducedInsertsCount());
+        result.addValue("finalinsertscounter", suite.countNumberOfInserts());
         result.addValue("testgenerationtime", testGenerationTime.getTime());
         result.addValue("mutantgenerationtime", mutantGenerationTime.getTime());
         result.addValue("originalresultstime", originalResultsTime.getTime());
