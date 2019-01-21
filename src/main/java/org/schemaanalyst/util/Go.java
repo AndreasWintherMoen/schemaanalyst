@@ -144,8 +144,8 @@ public class Go {
 			System.out.println("Num Evaluations (all): " + report.getNumEvaluations(false));
 
 			if (fullreduce || reduction.equals("reduceTC")) {
-				System.out.println("Generation Number of INSERTs: " + testSuiteGenerator.noneRemovedInsertsCount);
-				System.out.println("Number of INSERTs after reduction: " + testSuiteGenerator.reducedInsertsCount);
+				System.out.println("Full number of generated INSERTs: " + testSuite.getGeneratedInserts());
+				System.out.println("Number of INSERTs after Test Case Reduction: " + testSuite.getReducedInsertsCount());
 			}
 			
 			if (reduction.equals("eqltc") || reduction.equals("eqltr") || fullreduce) {
@@ -162,6 +162,7 @@ public class Go {
 				testSuite = reduce.getReducedTestSuite();
 				System.out.println("Number of Test Cases: " + testSuite.getTestCases().size());
 				System.out.println("==================================================================================");
+				System.out.println("Final Number of INSERTs After test suite reduction: " + testSuite.countNumberOfInserts());
 			}
 
 			if (printTR) {
