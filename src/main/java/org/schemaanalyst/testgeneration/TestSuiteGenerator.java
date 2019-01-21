@@ -170,6 +170,8 @@ public class TestSuiteGenerator {
 					testSuite.addTestCase(testCase);
 					testSuite.addGeneratedInserts(noneRemovedInsertsCount);
 					testSuite.addReducedInsertsCount(reducedInsertsCount);
+					noneRemovedInsertsCount = 0;
+					reducedInsertsCount = 0;
 					LOGGER.fine(
 							"--- SUCCESS, generated in " + dataGenerationReport.getNumEvaluations() + " evaluations");
 					LOGGER.fine("--- Data is \n" + data);

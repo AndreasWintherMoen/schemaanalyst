@@ -44,7 +44,7 @@ public class TestSuite implements Serializable {
 	}
 
 	public void addReducedInsertsCount(int reducedInsertsCount) {
-		this.reducedInsertsCount = reducedInsertsCount + reducedInsertsCount;
+		this.reducedInsertsCount = reducedInsertsCount + this.reducedInsertsCount;
 	}
 	
 	public int countNumberOfInserts() {
