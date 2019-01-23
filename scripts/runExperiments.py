@@ -12,7 +12,7 @@ import csv
 
 ############## START: Set-up experiment (Configs) ##################### 
 # DB Engines:  SQLite, Postgres, HyperSQL
-engines = ["SQLite", "HyperSQL"]
+engines = ["HyperSQL"]
 
 
 # databases are the case studies :
@@ -25,7 +25,7 @@ engines = ["SQLite", "HyperSQL"]
 "ProductSalesRepaired","RiskIt","Skype","SongTrackMetadata","SRAMetadb","StackOverflow","StudentResidence","Test","TweetComplete","UnixUsage",
 "Usda","WordNet","World"]
 """
-databases = ["ArtistSimilarity"]
+databases = ["ArtistSimilarity","ArtistTerm","BrowserCookies", "CoffeeOrders", "CustomerOrder", "Flights"]
 
 
 # Coverage you want to run:
@@ -34,14 +34,20 @@ databases = ["ArtistSimilarity"]
 coverages = ["ClauseAICC+AUCC+ANCC"]
 
 # Data generators of your choice:
-# ["avs", "avsDefaults", "random", "dominoRandom"]
+# ["avs", "avsDefaults", "random", "dominoRandom","dominoDefaults"]
 generators = ["dominoRandom"]
 
 # Number of runs you want
 # Default random seed will start at 1 until end_seed
 # NOTE: the end_seed will be off by one.
 # So, if you require 30 runs please type 31
-end_seed = 10
+end_seed = 3
+
+# Reduce Commands
+#reductions = ["none", "eqltc", "eqltr"]
+#reductions = ["none"]
+# predicate reduction
+reducePredicates = ["", "--fullreduce"]
 
 ############## END: Set-up experiment (Configs) ##################### 
 
@@ -51,7 +57,7 @@ log_file = open("errors.log", "w")
 
 # Compile SchemaAnalyst
 cmd1 = './gradlew compile'
-cmd2 = 'export CLASSPATH="build/classes/main:lib/*:build/lib/*:."'
+cmd2 = 'export CLASSPATH="build/classes/java/main:lib/*:build/lib/*:."'
 subprocess.check_output(cmd1, shell=True)
 subprocess.check_output(cmd2, shell=True)
 
@@ -132,6 +138,8 @@ def alive_mutant_r(scripts_path, resutls_path, data, gen, cov, eng, seed):
       run_r_command = subprocess.check_output(cmd, shell=True)
       print(run_r_command)
 
+      """
+      # ALREADY ADDED INTO THE JAVA CODE #
       # Add generator and Critira at the end of the columns of the file
       with open(resutls_path + 'mutanttiming.dat', 'r') as csvinput:
         with open(resutls_path + 'mutanttiming-output.dat', 'w') as csvoutput:
@@ -141,7 +149,7 @@ def alive_mutant_r(scripts_path, resutls_path, data, gen, cov, eng, seed):
           all = []
           row = next(reader)
           #print row
-
+          
           row.append('generator')
           row.append('criterion')
           row.append('randomseed')
@@ -157,16 +165,17 @@ def alive_mutant_r(scripts_path, resutls_path, data, gen, cov, eng, seed):
           #print all
 
           writer.writerows(all)
-
+      """
       # if "+" in cov:
       #    cov = cov.replace("+", "-")
       # reading mutanttiming
       shutil.copy2(resutls_path + 'mutanttiming-alive.dat', resutls_path + 'alive_mutant/mutant-alive-' + data + '-' + gen + '-' + cov + '-' + seed + '-' + eng + '.dat')
-      shutil.copy2(resutls_path + 'mutanttiming-output.dat', resutls_path + 'alive_mutant/mutant-results-' + data + '-' + gen + '-' + cov + '-' + seed + '-' + eng + '.dat')
+      shutil.copy2(resutls_path + 'mutanttiming.dat', resutls_path + 'alive_mutant/mutant-results-' + data + '-' + gen + '-' + cov + '-' + seed + '-' + eng + '.dat')
+      #shutil.copy2(resutls_path + 'mutanttiming-output.dat', resutls_path + 'alive_mutant/mutant-results-' + data + '-' + gen + '-' + cov + '-' + seed + '-' + eng + '.dat')
       # remove files
       subprocess.check_output("rm " + resutls_path + "mutanttiming.dat", shell=True)
       subprocess.check_output("rm " + resutls_path + "mutanttiming-alive.dat", shell=True)
-      subprocess.check_output("rm " + resutls_path + "mutanttiming-output.dat", shell=True)
+      #subprocess.check_output("rm " + resutls_path + "mutanttiming-output.dat", shell=True)
   except subprocess.CalledProcessError as e:
     print("ERROR 1")
     print e.output
@@ -179,40 +188,45 @@ for eng in engines:
   for data in databases:
     for gen in generators:
       for cov in coverages:
-        # Set-up random seed
-        for seed in range(1, end_seed):
-          try:
-            # Mutation Command
-            cmdStringMutation = "java org.schemaanalyst.util.Go -s parsedcasestudy." + data + " --dbms " + eng + " --criterion " + cov + " --generator " + gen + " mutation --pipeline AllOperatorsNoFKANormalisedWithClassifiers --technique=mutantTiming --seed " + str(seed)
-            
-            # Generation Command
-            cmdStringGeneration = "java org.schemaanalyst.util.Go -s parsedcasestudy." + data + " --dbms " + eng + " --criterion " + cov + " --generator " + gen + " generation --seed=" + str(seed)
+        #for reduction in reductions:
+        for predicate in reducePredicates:
+            # Set-up random seed
+            for seed in range(1, end_seed):
+              try:
+                cmdStringMutation = ""
+                if predicate == "--fullreduce":
+                    # Mutation Command
+                    cmdStringMutation = "java org.schemaanalyst.util.Go -s parsedcasestudy." + data + " --dbms " + eng + " --criterion " + cov + " --generator " + gen + " mutation --pipeline AllOperatorsNoFKANormalisedWithClassifiers --technique=mutantTiming --seed " + str(seed) + " --fullreduce" # + " --reduce=" + reduction 
+                else:
+                    cmdStringMutation = "java org.schemaanalyst.util.Go -s parsedcasestudy." + data + " --dbms " + eng + " --criterion " + cov + " --generator " + gen + " mutation --pipeline AllOperatorsNoFKANormalisedWithClassifiers --technique=mutantTiming --seed " + str(seed)
+                # Generation Command
+                cmdStringGeneration = "java org.schemaanalyst.util.Go -s parsedcasestudy." + data + " --dbms " + eng + " --criterion " + cov + " --generator " + gen + " generation --seed=" + str(seed)
 
-            print cmdStringMutation
-            # Run process
-            run_java_command = subprocess.check_output(cmdStringMutation, shell=True,)
-            
-            print(run_java_command)
+                print cmdStringMutation
+                # Run process
+                run_java_command = subprocess.check_output(cmdStringMutation, shell=True,)
+                
+                print(run_java_command)
 
-            # Run R alive script
-            alive_mutant_r(path_to_scripts, path_to_results, data, gen, cov, eng, str(seed))
+                # Run R alive script
+                alive_mutant_r(path_to_scripts, path_to_results, data, gen, cov, eng, str(seed))
 
-          except subprocess.CalledProcessError as e:
-            info = "parsedcasestudy." + data + "  dbms " + eng + " criterion " + cov + " generator " + gen + " seed " + str(seed)
-            if e.returncode == 127:
-              log_file.write("ERROR - program not found - runner INFO - %s \n" % info)
-              log_file.write("ERROR - runner - %s \n" % e.output)
-            elif e.returncode <= 125:
-              log_file.write("ERROR - failed - runner INFO - %s \n" % info)
-              log_file.write("ERROR - runner - %s \n" % e.output)
-            else:
-              # Things get hairy and unportable - different shells return
-              # different values for coredumps, signals, etc.
-              log_file.write("ERROR - runner - '%s' likely crashed, shell retruned code %d" % (cmd, e.returncode))
-          except OSError as e:
-            # unlikely, but still possible: the system failed to execute the shell
-            # itself (out-of-memory, out-of-file-descriptors, and other extreme cases).
-            log_file.write("failed to run shell: '%s'" % (str(e)))
+              except subprocess.CalledProcessError as e:
+                info = "parsedcasestudy." + data + "  dbms " + eng + " criterion " + cov + " generator " + gen + " seed " + str(seed)
+                if e.returncode == 127:
+                  log_file.write("ERROR - program not found - runner INFO - %s \n" % info)
+                  log_file.write("ERROR - runner - %s \n" % e.output)
+                elif e.returncode <= 125:
+                  log_file.write("ERROR - failed - runner INFO - %s \n" % info)
+                  log_file.write("ERROR - runner - %s \n" % e.output)
+                else:
+                  # Things get hairy and unportable - different shells return
+                  # different values for coredumps, signals, etc.
+                  log_file.write("ERROR - runner - '%s' likely crashed, shell retruned code %d" % (cmd, e.returncode))
+              except OSError as e:
+                # unlikely, but still possible: the system failed to execute the shell
+                # itself (out-of-memory, out-of-file-descriptors, and other extreme cases).
+                log_file.write("failed to run shell: '%s'" % (str(e)))
 
 # Functions parameters
 dynamicDir = cwd + '/results/alive_mutant'

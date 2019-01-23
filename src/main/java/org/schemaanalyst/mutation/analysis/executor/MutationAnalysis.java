@@ -286,7 +286,7 @@ public class MutationAnalysis extends Runner {
     }
 
     private Technique instantiateTechnique(Schema schema, List<Mutant<Schema>> mutants, TestSuite testSuite, DBMS dbms, DatabaseInteractor databaseInteractor) {
-        return TechniqueFactory.instantiate(technique, schema, mutants, testSuite, dbms, databaseInteractor, useTransactions);
+        return TechniqueFactory.instantiate(technique, schema, mutants, testSuite, dbms, databaseInteractor, useTransactions, dataGenerator, criterion, randomseed);
     }
 
     /**
